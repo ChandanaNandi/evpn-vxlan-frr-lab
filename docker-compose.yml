@@ -1,0 +1,95 @@
+services:
+  spine1:
+    image: frrouting/frr:v8.4.1
+    container_name: spine1
+    hostname: spine1
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.forwarding: "1"
+    volumes:
+      - ./configs/spine1:/etc/frr
+    networks:
+      leaf1_spine1:
+        ipv4_address: 10.0.12.3
+      spine1_leaf2:
+        ipv4_address: 10.0.23.2
+
+  leaf1:
+    image: frrouting/frr:v8.4.1
+    container_name: leaf1
+    hostname: leaf1
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.forwarding: "1"
+    volumes:
+      - ./configs/leaf1:/etc/frr
+    networks:
+      leaf1_spine1:
+        ipv4_address: 10.0.12.2
+      hostA_leaf1:
+        ipv4_address: 169.254.10.2
+
+  leaf2:
+    image: frrouting/frr:v8.4.1
+    container_name: leaf2
+    hostname: leaf2
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_ADMIN, NET_RAW]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.forwarding: "1"
+    volumes:
+      - ./configs/leaf2:/etc/frr
+    networks:
+      spine1_leaf2:
+        ipv4_address: 10.0.23.3
+      leaf2_hostB:
+        ipv4_address: 169.254.20.2
+
+  hostA:
+    image: nicolaka/netshoot:latest
+    container_name: hostA
+    hostname: hostA
+    privileged: true
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: ["sleep", "infinity"]
+    networks:
+      hostA_leaf1:
+        ipv4_address: 169.254.10.10
+
+  hostB:
+    image: nicolaka/netshoot:latest
+    container_name: hostB
+    hostname: hostB
+    privileged: true
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: ["sleep", "infinity"]
+    networks:
+      leaf2_hostB:
+        ipv4_address: 169.254.20.10
+
+networks:
+  leaf1_spine1:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.12.0/24
+  spine1_leaf2:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.23.0/24
+  hostA_leaf1:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 169.254.10.0/24
+  leaf2_hostB:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 169.254.20.0/24
